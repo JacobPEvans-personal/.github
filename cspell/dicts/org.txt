@@ -1,9 +1,0 @@
-# JacobPEvans org identifiers, project names, shared code references.
-
-agentsmd
-hookify
-jacobpevans
-jevans
-macbook
-raycast-smart-issue
-visicore

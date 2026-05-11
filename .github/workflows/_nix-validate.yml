@@ -34,6 +34,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      # Free ~30GB on the ubuntu-latest runner so `nix flake check --all-systems`
+      # has space to substitute darwin source paths (rustc-src, cctools,
+      # apple-sdk, etc.) without hitting "No space left on device". The default
+      # runner image has ~14GB free; nix-darwin / nix-ai darwin closures need
+      # noticeably more than that. Keeps tool-cache (Node/Python/Go) intact for
+      # downstream steps. Replaces an earlier --no-build attempt that broke
+      # consumer checks referencing derivation outputs across platforms.
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: false
+          swap-storage: false
+          docker-images: true
+
       # determinate-nix-action@v3 is ONLY a Nix installer (replaced nix-installer-action@v21).
       # It does NOT include flake checking — that was a separate action (flake-checker-action).
       # Flake evaluation is handled by `nix flake check` below, not by the installer.
@@ -62,12 +80,13 @@ jobs:
             nix-linux-${{ runner.os }}-
 
       - name: Check flake
-        # --no-build: evaluate all systems' outputs without downloading/building
-        # derivations. Catches broken-package and evaluation errors cross-platform
-        # without exhausting disk on the linux runner (darwin packages like
-        # rustc-src, cctools, apple-sdk would otherwise be downloaded) or hitting
-        # "platform mismatch" build failures on aarch64-darwin-only derivations.
-        run: nix flake check --all-systems --no-build --print-build-logs --show-trace --keep-going
+        # --all-systems evaluates outputs for every declared system to catch
+        # darwin-only broken packages from the linux runner. Disk cleanup above
+        # ensures source-path substitution for darwin closures fits. --no-build
+        # is intentionally NOT used here: it disables substitution context for
+        # input flakes which breaks consumer checks that reference derivation
+        # outputs across platforms (e.g. nix-darwin/nix-ai module-eval).
+        run: nix flake check --all-systems --print-build-logs --show-trace --keep-going
 
       - name: Save Nix Store Cache
         if: github.event_name == 'push' && steps.nix-cache.outputs.cache-hit != 'true'

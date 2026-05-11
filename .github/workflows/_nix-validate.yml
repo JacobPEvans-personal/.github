@@ -48,6 +48,8 @@ jobs:
             stalled-download-timeout = 10
             narinfo-cache-positive-ttl = 86400
             fallback = true
+            show-trace = true
+            log-lines = 1000
 
       - name: Restore Nix Store Cache
         uses: actions/cache/restore@v5
@@ -61,7 +63,7 @@ jobs:
             nix-linux-${{ runner.os }}-
 
       - name: Check flake
-        run: nix flake check --all-systems --print-build-logs
+        run: nix flake check --all-systems --print-build-logs --show-trace --keep-going
 
       - name: Save Nix Store Cache
         if: github.event_name == 'push' && steps.nix-cache.outputs.cache-hit != 'true'

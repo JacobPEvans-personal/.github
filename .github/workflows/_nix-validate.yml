@@ -48,7 +48,6 @@ jobs:
             stalled-download-timeout = 10
             narinfo-cache-positive-ttl = 86400
             fallback = true
-            show-trace = true
             log-lines = 1000
 
       - name: Restore Nix Store Cache

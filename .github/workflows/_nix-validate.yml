@@ -41,8 +41,13 @@ jobs:
       # noticeably more than that. Keeps tool-cache (Node/Python/Go) intact for
       # downstream steps. Replaces an earlier --no-build attempt that broke
       # consumer checks referencing derivation outputs across platforms.
+      #
+      # Gated to ubuntu-* runners only — never run on a self-hosted runner
+      # (RunsOn etc.), where removing preinstalled components would damage
+      # long-lived state.
       - name: Free disk space
-        uses: jlumbroso/free-disk-space@main
+        if: startsWith(inputs.runner_label, 'ubuntu-')
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
           android: true

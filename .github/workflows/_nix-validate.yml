@@ -1,6 +1,6 @@
 # Reusable: Nix Validate
-# Runs nix flake check --all-systems to catch broken packages on all declared
-# systems (darwin included) from a linux runner before they merge.
+# Runs `nix flake check` for the current system, optionally with --all-systems
+# to catch packages broken on darwin from a linux runner before they merge.
 name: _nix-validate
 
 on:
@@ -14,6 +14,16 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      all_systems:
+        description: >-
+          Pass --all-systems to nix flake check to evaluate outputs for every
+          declared system from the runner. Defaults true. Set false for repos
+          whose check derivations are platform-specific (require darwin
+          binaries to build), since `nix flake check --all-systems` attempts
+          to build cross-platform checks and fails with "platform mismatch".
+        type: boolean
+        required: false
+        default: true
 
 concurrency:
   group: nix-validate-${{ github.workflow }}-${{ github.ref }}
@@ -36,17 +46,11 @@ jobs:
 
       # Free ~30GB on the ubuntu-latest runner so `nix flake check --all-systems`
       # has space to substitute darwin source paths (rustc-src, cctools,
-      # apple-sdk, etc.) without hitting "No space left on device". The default
-      # runner image has ~14GB free; nix-darwin / nix-ai darwin closures need
-      # noticeably more than that. Keeps tool-cache (Node/Python/Go) intact for
-      # downstream steps. Replaces an earlier --no-build attempt that broke
-      # consumer checks referencing derivation outputs across platforms.
-      #
-      # Gated to ubuntu-* runners only — never run on a self-hosted runner
-      # (RunsOn etc.), where removing preinstalled components would damage
-      # long-lived state.
+      # apple-sdk, etc.) without hitting "No space left on device". Only needed
+      # when all_systems is true; gated to ubuntu-* runners so self-hosted
+      # runner long-lived state is never modified.
       - name: Free disk space
-        if: startsWith(inputs.runner_label, 'ubuntu-')
+        if: inputs.all_systems && startsWith(inputs.runner_label, 'ubuntu-')
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
@@ -86,12 +90,12 @@ jobs:
 
       - name: Check flake
         # --all-systems evaluates outputs for every declared system to catch
-        # darwin-only broken packages from the linux runner. Disk cleanup above
-        # ensures source-path substitution for darwin closures fits. --no-build
-        # is intentionally NOT used here: it disables substitution context for
-        # input flakes which breaks consumer checks that reference derivation
-        # outputs across platforms (e.g. nix-darwin/nix-ai module-eval).
-        run: nix flake check --all-systems --print-build-logs --show-trace --keep-going
+        # darwin-only broken packages from the linux runner. Disabled by setting
+        # `all_systems: false` for repos whose checks build platform-specific
+        # derivations (require darwin binaries).
+        env:
+          ALL_SYSTEMS_FLAG: ${{ inputs.all_systems && '--all-systems' || '' }}
+        run: nix flake check $ALL_SYSTEMS_FLAG --print-build-logs --show-trace --keep-going
 
       - name: Save Nix Store Cache
         if: github.event_name == 'push' && steps.nix-cache.outputs.cache-hit != 'true'

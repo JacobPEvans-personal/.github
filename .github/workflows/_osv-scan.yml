@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Run OSV Scanner
-        uses: google/osv-scanner-action/osv-scanner-action@v2.3.5
+        uses: google/osv-scanner-action/osv-scanner-action@v2.3.8
         with:
           scan-args: |-
             ${{ steps.config.outputs.args }}

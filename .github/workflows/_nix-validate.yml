@@ -62,7 +62,12 @@ jobs:
             nix-linux-${{ runner.os }}-
 
       - name: Check flake
-        run: nix flake check --all-systems --print-build-logs --show-trace --keep-going
+        # --no-build: evaluate all systems' outputs without downloading/building
+        # derivations. Catches broken-package and evaluation errors cross-platform
+        # without exhausting disk on the linux runner (darwin packages like
+        # rustc-src, cctools, apple-sdk would otherwise be downloaded) or hitting
+        # "platform mismatch" build failures on aarch64-darwin-only derivations.
+        run: nix flake check --all-systems --no-build --print-build-logs --show-trace --keep-going
 
       - name: Save Nix Store Cache
         if: github.event_name == 'push' && steps.nix-cache.outputs.cache-hit != 'true'

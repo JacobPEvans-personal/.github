@@ -1,5 +1,6 @@
-# Reusable: Nix Validate (Linux)
-# Runs nix flake check with CI-optimized Nix settings and store caching.
+# Reusable: Nix Validate
+# Runs nix flake check --all-systems to catch broken packages on all declared
+# systems (darwin included) from a linux runner before they merge.
 name: _nix-validate
 
 on:
@@ -60,7 +61,7 @@ jobs:
             nix-linux-${{ runner.os }}-
 
       - name: Check flake
-        run: nix flake check --print-build-logs
+        run: nix flake check --all-systems --print-build-logs
 
       - name: Save Nix Store Cache
         if: github.event_name == 'push' && steps.nix-cache.outputs.cache-hit != 'true'

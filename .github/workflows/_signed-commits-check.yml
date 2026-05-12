@@ -1,0 +1,43 @@
+# Reusable: Signed Commits Check
+#
+# Fails any pull request that contains a commit GitHub reports as
+# `verified:false`. This is the PR-level regression backstop behind the
+# `required_signatures` branch-protection rulesets — even if a ruleset is
+# bypassed (admin override, future ruleset edit) the PR can't get a green
+# check without signed commits.
+#
+# Safe to call from non-PR contexts: the script no-ops cleanly when
+# `context.payload.pull_request` is absent.
+name: _signed-commits-check
+
+on:
+  workflow_call:
+
+concurrency:
+  group: signed-commits-check-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  verify:
+    name: Verify signed commits
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout signed-commits-check script
+        uses: actions/checkout@v6
+        with:
+          repository: JacobPEvans/.github
+          ref: main
+          path: .gh-shared
+          sparse-checkout: .github/scripts/signed-commits-check.js
+          sparse-checkout-cone-mode: false
+
+      - name: Verify every commit in the PR is signed
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const run = require('./.gh-shared/.github/scripts/signed-commits-check.js');
+            await run({ github, context, core });

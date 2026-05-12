@@ -5,12 +5,13 @@
 #
 # What this workflow does:
 #
-#   changes  -> dorny/paths-filter on caller-supplied filters
-#   <check jobs> -> per-check reusable workflows, gated on (input toggle && filter)
-#   watchdog -> sleeps queue_timeout_minutes, cancels any sibling job still
-#               in `queued` state so the gate is never blocked indefinitely
-#   gate     -> name MUST stay "Merge Gate" (matches branch protection rulesets);
-#               aggregates results via re-actors/alls-green
+#   changes        -> dorny/paths-filter on caller-supplied filters
+#   <check jobs>   -> per-check reusable workflows, gated on (input toggle && filter)
+#   signed-commits -> always-on; fails the PR if any commit is verified:false
+#   watchdog       -> sleeps queue_timeout_minutes, cancels any sibling job still
+#                     in `queued` state so the gate is never blocked indefinitely
+#   gate           -> name MUST stay "Merge Gate" (matches branch protection rulesets);
+#                     aggregates results via re-actors/alls-green
 #
 # Why the watchdog exists:
 #
@@ -125,6 +126,14 @@ jobs:
       python-dirs: ${{ inputs.python_security_dirs }}
     secrets: inherit
 
+  # Always-on regression backstop for the org-wide "all automated commits must
+  # be verified" initiative. No filter gate, no input toggle: every PR runs it.
+  # Skipped on non-PR events so `re-actors/alls-green` accepts it as a skip.
+  signed-commits:
+    name: Signed Commits
+    if: ${{ github.event_name == 'pull_request' }}
+    uses: JacobPEvans/.github/.github/workflows/_signed-commits-check.yml@main
+
   # ============================================================================
   # WATCHDOG
   # Forces a terminal state for queued sibling jobs after queue_timeout_minutes.
@@ -164,7 +173,7 @@ jobs:
   # ============================================================================
   gate:
     name: Merge Gate
-    needs: [changes, watchdog, nix-validate, markdown-lint, file-size, python-security]
+    needs: [changes, watchdog, nix-validate, markdown-lint, file-size, python-security, signed-commits]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -173,5 +182,6 @@ jobs:
         with:
           # `watchdog` is always-success-on-completion; treating it as
           # allowed-skip lets `alls-green` ignore its result either way.
-          allowed-skips: nix-validate, markdown-lint, file-size, python-security, watchdog
+          # `signed-commits` is skipped on non-PR events (push) — also allowed.
+          allowed-skips: nix-validate, markdown-lint, file-size, python-security, watchdog, signed-commits
           jobs: ${{ toJSON(needs) }}

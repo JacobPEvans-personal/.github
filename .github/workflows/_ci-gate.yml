@@ -22,9 +22,10 @@
 #
 # Filter name convention (caller defines these in `filters:` input):
 #
-#   nix            -> gates `nix_validate`
-#   markdown       -> gates `markdown_lint` and `file_size`
-#   python         -> gates `python_security`
+#   nix             -> gates `nix_validate`
+#   markdown        -> gates `markdown_lint` and `file_size`
+#   python          -> gates `python_security`
+#   github_actions  -> gates `no_runner_git_commit`
 #
 # Callers may include additional filters; this workflow ignores them. To add
 # a new conditional check, add: input toggle, conditional job, and entry in
@@ -62,6 +63,13 @@ on:
         description: Space-separated dirs passed to _python-security.yml
         type: string
         default: ''
+      no_runner_git_commit:
+        description: >-
+          Enable `No Runner Git Commit` (Layer 5 of the signed-commits
+          initiative — blocks raw `git commit` / `git push` in workflow
+          YAML). Gated on `github_actions` filter.
+        type: boolean
+        default: false
 
       queue_timeout_minutes:
         description: >-
@@ -86,6 +94,7 @@ jobs:
       nix: ${{ steps.filter.outputs.nix }}
       markdown: ${{ steps.filter.outputs.markdown }}
       python: ${{ steps.filter.outputs.python }}
+      github_actions: ${{ steps.filter.outputs.github_actions }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v4
@@ -124,6 +133,12 @@ jobs:
     with:
       python-dirs: ${{ inputs.python_security_dirs }}
     secrets: inherit
+
+  no-runner-git-commit:
+    name: No Runner Git Commit
+    needs: changes
+    if: ${{ inputs.no_runner_git_commit && needs.changes.outputs.github_actions == 'true' }}
+    uses: JacobPEvans/.github/.github/workflows/_no-runner-git-commit.yml@main
 
   # ============================================================================
   # WATCHDOG
@@ -164,7 +179,7 @@ jobs:
   # ============================================================================
   gate:
     name: Merge Gate
-    needs: [changes, watchdog, nix-validate, markdown-lint, file-size, python-security]
+    needs: [changes, watchdog, nix-validate, markdown-lint, file-size, python-security, no-runner-git-commit]
     if: ${{ always() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -173,5 +188,5 @@ jobs:
         with:
           # `watchdog` is always-success-on-completion; treating it as
           # allowed-skip lets `alls-green` ignore its result either way.
-          allowed-skips: nix-validate, markdown-lint, file-size, python-security, watchdog
+          allowed-skips: nix-validate, markdown-lint, file-size, python-security, no-runner-git-commit, watchdog
           jobs: ${{ toJSON(needs) }}

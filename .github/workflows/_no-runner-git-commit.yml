@@ -1,0 +1,46 @@
+# Reusable: No Runner Git Commit
+#
+# Layer 5 of the signed-commits initiative. Scans `.github/workflows/*.yml`
+# and `.github/actions/**/action.yml` in the calling repo, failing the job
+# if any `run:` step contains raw `git commit` or `git push` outside the
+# documented allowlist (Contents API, peter-evans/create-pull-request,
+# the `_ai-action-with-signing.yml` wrapper).
+#
+# Authoring source: ai-assistant-instructions/scripts/check-no-runner-git-commit.sh
+# Source rule: agentsmd/rules/git-signing.md
+name: _no-runner-git-commit
+
+on:
+  workflow_call:
+
+concurrency:
+  group: no-runner-git-commit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: No Runner Git Commit
+    runs-on: ubuntu-latest
+    # Hard cap so a wedged scan can't block `Merge Gate` indefinitely.
+    timeout-minutes: 5
+    steps:
+      - name: Checkout caller repo
+        uses: actions/checkout@v6
+
+      - name: Sparse-checkout hook script from ai-assistant-instructions
+        uses: actions/checkout@v6
+        with:
+          repository: JacobPEvans/ai-assistant-instructions
+          ref: main
+          path: .aai
+          sparse-checkout: scripts/check-no-runner-git-commit.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Install yq (Python wrapper around jq used by the hook)
+        run: pipx install yq
+
+      - name: Run hook
+        run: bash .aai/scripts/check-no-runner-git-commit.sh

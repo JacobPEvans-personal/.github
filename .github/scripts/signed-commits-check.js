@@ -1,9 +1,15 @@
 // Fails the calling workflow when any commit in the active pull request is not
 // verified by GitHub (GPG, S/MIME, or SSH signature). Designed to be invoked
-// from `_signed-commits-check.yml` via `actions/github-script`:
+// from `_signed-commits-check.yml` via `actions/github-script`. The reusable
+// workflow sparse-checks this file out of JacobPEvans/.github@main into
+// `./.gh-shared/.github/scripts/` on the consumer's runner, so the require()
+// path the workflow uses is:
 //
-//   const run = require('./.github/scripts/signed-commits-check.js');
+//   const run = require('./.gh-shared/.github/scripts/signed-commits-check.js');
 //   await run({ github, context, core });
+//
+// When running inside this repo's own CI (e.g. the dogfood gate), the script
+// is in-tree, so the path without the `.gh-shared/` prefix also works.
 //
 // Why this lives in a dedicated file: no off-the-shelf action exists for the
 // "fail-PR-on-any-unsigned-commit" check, and the pagination + filter + summary

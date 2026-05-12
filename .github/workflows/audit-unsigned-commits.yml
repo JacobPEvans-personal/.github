@@ -1,0 +1,54 @@
+name: Audit Unsigned Commits
+
+# Weekly canary: scan default branches (plus a curated list of additional
+# branches like the JacobPEvans/JacobPEvans output deploy branch) across both
+# JacobPEvans + dryvist for any commit whose GitHub signature isn't verified.
+# Posts to Slack and fails the run if any are found.
+#
+# Defense-in-depth layer behind:
+#   1. Rulesets with required_signatures (rejects unsigned at push time)
+#   2. _signed-commits-check.yml on every PR (rejects unsigned in code review)
+#   3. no-runner-git-commit pre-commit hook (rejects unsigned at author time)
+# This audit is the final canary if any of the above silently regress.
+
+on:
+  schedule:
+    - cron: '17 13 * * 1'  # Monday 13:17 UTC — off the :00 minute mark to spread load
+  workflow_dispatch:
+    inputs:
+      window_days:
+        description: Lookback window in days
+        type: string
+        default: "7"
+      orgs:
+        description: Comma-separated list of orgs/users to sweep
+        type: string
+        default: "JacobPEvans,dryvist"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit unsigned commits
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout audit script
+        uses: actions/checkout@v6
+        with:
+          sparse-checkout: .github/scripts/audit-unsigned-commits
+          sparse-checkout-cone-mode: false
+
+      - name: Run audit
+        uses: actions/github-script@v9
+        env:
+          ORGS: ${{ inputs.orgs || 'JacobPEvans,dryvist' }}
+          AUDIT_WINDOW_DAYS: ${{ inputs.window_days || '7' }}
+          EXTRA_BRANCHES: '{"JacobPEvans/JacobPEvans": ["output"]}'
+          SLACK_WEBHOOK_URL: ${{ secrets.GH_SLACK_WEBHOOK_URL_GITHUB_CI_FAILURES }}
+          SLACK_CHANNEL_NAME: '#github-ci-failures'
+        with:
+          script: |
+            const run = require('./.github/scripts/audit-unsigned-commits/run.js');
+            await run({ github, core });

@@ -1,14 +1,26 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": [
-    "JacobPEvans org-wide Renovate preset",
+    "JacobPEvans org-wide Renovate preset — entry point. Consumers extend this via local>JacobPEvans/.github:renovate-presets.",
+    "Architecture: this file holds global policy (auto-merge, trusted orgs, stability features, custom managers). Ecosystem grouping rules live in renovate-grouping.json and are pulled in via extends below. Inline description fields on each rule are the canonical documentation — keep them current.",
     "WARNING: platformAutomerge MUST stay false. GitHub's auto-merge queue has a known bug (RC3) where PRs pass all checks but GitHub never executes the merge — PRs stall for days with no error. With false, Renovate merges directly via API with built-in retry logic. See PR #196 for full history. Do NOT set this to true."
+  ],
+  "extends": [
+    "local>JacobPEvans/.github:renovate-grouping"
   ],
   "platformAutomerge": false,
   "baseBranchPatterns": ["$default"],
   "automergeType": "pr",
   "automergeStrategy": "squash",
   "pinGitHubActionDigests": true,
+  "dependencyDashboard": true,
+  "dependencyDashboardLabels": ["dependencies"],
+  "dependencyDashboardOSVVulnerabilitySummary": "unresolved",
+  "prConcurrentLimit": 5,
+  "branchConcurrentLimit": 3,
+  "rebaseWhen": "conflicted",
+  "ignoreDeprecated": true,
+  "osvVulnerabilityAlerts": true,
   "ignorePaths": [
     ".github/workflows/*.lock.yml",
     ".github/workflows/agentics-maintenance.yml",

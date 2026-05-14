@@ -46,6 +46,16 @@ on:
         description: Enable `Nix Validate` (gated on `nix` filter)
         type: boolean
         default: false
+      all_systems:
+        description: >-
+          Pass --all-systems to `nix flake check`. Default true catches
+          darwin-only `meta.broken` packages from a linux runner. Set false
+          only when consumer flakes declare platform-specific check
+          derivations that cannot be made platform-aware (rare — prefer
+          fixing the flake to use `runCommandLocal` or to scope source-only
+          checks to the CI system).
+        type: boolean
+        default: true
       markdown_lint:
         description: Enable `Markdown Lint` (gated on `markdown` filter)
         type: boolean
@@ -103,6 +113,8 @@ jobs:
     needs: changes
     if: ${{ inputs.nix_validate && needs.changes.outputs.nix == 'true' }}
     uses: JacobPEvans/.github/.github/workflows/_nix-validate.yml@main
+    with:
+      all_systems: ${{ inputs.all_systems }}
 
   markdown-lint:
     name: Markdown Lint

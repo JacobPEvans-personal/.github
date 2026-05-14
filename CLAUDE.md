@@ -10,12 +10,12 @@ that don't define their own versions.
 ## Key Files
 
 - `renovate.json` — Renovate config extending `config:recommended` and local presets
+- `renovate-presets.json` — Org-wide Renovate preset. Inline `description` fields are canonical docs. Extend from other repos via `local>JacobPEvans/.github:renovate-presets`.
 - `.github/labels.yml` — Canonical label definitions deployed to all repos via `label-sync.yml`
 - `.github/workflows/label-sync.yml` — Syncs `labels.yml` to all repos on push to main
 - `.github/ISSUE_TEMPLATE/` — Issue forms (bug, feature, docs, chore); all require `priority` + `size` labels
 - `.github/PULL_REQUEST_TEMPLATE/` — PR templates per change type; all require Conventional Commits format
 - `docs/CONTRIBUTING.md` — Inherited contributing guidelines
-- `docs/RENOVATE.md` — Renovate onboarding guide (always extend the org preset)
 
 ## Common Tasks
 

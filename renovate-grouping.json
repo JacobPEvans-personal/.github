@@ -1,0 +1,73 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": [
+    "JacobPEvans org-wide Renovate grouping preset.",
+    "Batches related dependency updates into single PRs to reduce review burden and prevent deploy-queue saturation. Extended by renovate-presets.json — do not extend this directly from consumers, extend renovate-presets instead. Adding a new ecosystem grouping? Add a packageRule here with a clear description explaining why the packages must move together."
+  ],
+  "packageRules": [
+    {
+      "description": "Group Terraform providers, modules, and Terragrunt updates into a single PR. Prevents deploy-queue saturation when a provider bump arrives alongside a terragrunt dependency. Applies to every repo using either manager.",
+      "matchManagers": ["terraform", "terragrunt"],
+      "groupName": "Terraform & Terragrunt"
+    },
+    {
+      "description": "Group Ansible Galaxy collection updates. Collections almost always release together (e.g., community.general + ansible.posix) and breakage manifests at the playbook level, so reviewing them as a unit is correct.",
+      "matchManagers": ["ansible-galaxy"],
+      "groupName": "Ansible collections"
+    },
+    {
+      "description": "Group OpenTelemetry packages across npm and Python. OTel releases SDKs in lockstep — mixing versions across instrumentation packages causes silent dropped spans.",
+      "matchPackageNames": ["@opentelemetry/**", "opentelemetry-**"],
+      "groupName": "OpenTelemetry"
+    },
+    {
+      "description": "Group TypeScript type definitions (@types/*). Type-only updates are mechanical and almost never break runtime behavior. Auto-merged minor/patch.",
+      "matchPackageNames": ["@types/**"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "TypeScript types",
+      "automerge": true
+    },
+    {
+      "description": "Group ESLint core and TypeScript-aware ESLint plugins. typescript-eslint releases as a monorepo with matched versions across @typescript-eslint/parser, @typescript-eslint/eslint-plugin, etc. — they must move together.",
+      "matchPackageNames": [
+        "eslint",
+        "eslint-**",
+        "@eslint/**",
+        "@typescript-eslint/**",
+        "typescript-eslint",
+        "typescript"
+      ],
+      "groupName": "ESLint & TypeScript"
+    },
+    {
+      "description": "Group pytest core and pytest-* plugins. Plugin compatibility is tied to pytest minor versions; batching prevents version-skew breakages in CI.",
+      "matchDatasources": ["pypi"],
+      "matchPackageNames": ["pytest", "pytest-**"],
+      "groupName": "pytest"
+    },
+    {
+      "description": "Group AWS SDK packages across npm (@aws-sdk/*, aws-sdk) and Python (boto3, botocore). AWS releases these as a coordinated set — botocore feeds boto3, @aws-sdk submodules share a version.",
+      "matchPackageNames": [
+        "aws-sdk",
+        "@aws-sdk/**",
+        "boto3",
+        "botocore",
+        "s3transfer"
+      ],
+      "groupName": "AWS SDK"
+    },
+    {
+      "description": "Group HuggingFace ecosystem packages. transformers + tokenizers + datasets + accelerate + huggingface-hub have tightly-coupled version requirements; partial updates routinely break imports.",
+      "matchPackageNames": [
+        "transformers",
+        "tokenizers",
+        "datasets",
+        "accelerate",
+        "huggingface-hub",
+        "safetensors",
+        "evaluate"
+      ],
+      "groupName": "HuggingFace"
+    }
+  ]
+}

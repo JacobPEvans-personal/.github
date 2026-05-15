@@ -4,6 +4,15 @@ name: _markdown-lint
 
 on:
   workflow_call:
+    inputs:
+      runner_label:
+        description: >-
+          GitHub Actions runner label. Defaults to ubuntu-latest. Pass a
+          RunsOn label (see runs-on.com/configuration/job-labels) to opt
+          the calling repo into self-hosted runners.
+        type: string
+        required: false
+        default: ubuntu-latest
 
 concurrency:
   group: markdown-lint-${{ github.workflow }}-${{ github.ref }}
@@ -15,7 +24,7 @@ permissions:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner_label }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6

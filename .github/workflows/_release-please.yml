@@ -53,6 +53,14 @@ on:
           to use the quiet-window batching flow instead.
         type: boolean
         default: true
+      runner_label:
+        description: >-
+          GitHub Actions runner label. Defaults to ubuntu-latest. Pass a
+          RunsOn label (see runs-on.com/configuration/job-labels) to opt
+          the calling repo into self-hosted runners.
+        type: string
+        required: false
+        default: ubuntu-latest
     secrets:
       GH_APP_PRIVATE_KEY:
         required: true
@@ -67,7 +75,7 @@ permissions: {}
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner_label }}
     permissions:
       contents: write
       pull-requests: write

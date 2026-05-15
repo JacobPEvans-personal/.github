@@ -9,6 +9,14 @@ on:
         description: "Pack type: edge or stream"
         required: true
         type: string
+      runner_label:
+        description: >-
+          GitHub Actions runner label. Defaults to ubuntu-latest. Pass a
+          RunsOn label (see runs-on.com/configuration/job-labels) to opt
+          the calling repo into self-hosted runners.
+        type: string
+        required: false
+        default: ubuntu-latest
 
 concurrency:
   group: cribl-pack-validate-${{ github.workflow }}-${{ github.ref }}
@@ -20,7 +28,7 @@ permissions:
 jobs:
   validate:
     name: Validate
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner_label }}
     steps:
       - name: Checkout pack repo
         uses: actions/checkout@v6

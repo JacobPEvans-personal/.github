@@ -73,6 +73,19 @@ on:
         type: string
         default: ''
 
+      runner_label:
+        description: >-
+          GitHub Actions runner label for the orchestration jobs in this
+          workflow (`Detect Changes`, `Queue Watchdog`, `Merge Gate`). Also
+          passed through to every child reusable workflow this gate calls
+          (`Nix Validate`, `Markdown Lint`, `File Size`, `Python Security`),
+          so a single input migrates the whole gate.
+          Defaults to ubuntu-latest. Pass a RunsOn label
+          (see runs-on.com/configuration/job-labels) to opt in.
+        type: string
+        required: false
+        default: ubuntu-latest
+
       queue_timeout_minutes:
         description: >-
           Minutes the watchdog waits before cancelling sibling jobs still in

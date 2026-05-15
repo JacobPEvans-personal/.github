@@ -44,7 +44,7 @@
   },
   "customManagers": [
     {
-      "description": "Renovate-annotated version pins in Nix files",
+      "description": "Renovate-annotated version pins in Nix files. HASH FIELDS ARE NOT UPDATED — only version strings. Each repo's fix-renovate-hashes.yml runs nix-update to fix adjacent hash = \"sha256-...\" fields after Renovate bumps a version. When adding a new fetchPypi/fetchurl package with a Renovate annotation, also add it to that repo's nix-update workflow and flake packages output.",
       "customType": "regex",
       "managerFilePatterns": ["/\\.nix$/"],
       "matchStrings": [

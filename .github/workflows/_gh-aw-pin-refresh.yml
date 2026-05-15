@@ -37,6 +37,14 @@ on:
         description: 'compile = refresh SHA pins only; upgrade = full gh-aw infrastructure update'
         type: string
         default: 'compile'
+      runner_label:
+        description: >-
+          GitHub Actions runner label. Defaults to ubuntu-latest. Pass a
+          RunsOn label (see runs-on.com/configuration/job-labels) to opt
+          the calling repo into self-hosted runners.
+        type: string
+        required: false
+        default: ubuntu-latest
     secrets:
       GH_APP_PRIVATE_KEY:
         required: true
@@ -47,7 +55,7 @@ permissions: {}
 
 jobs:
   refresh-pins:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner_label }}
     permissions:
       contents: write
       pull-requests: write

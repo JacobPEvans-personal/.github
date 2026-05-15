@@ -20,6 +20,13 @@ trap 'rm -f "$BEFORE"' EXIT
 
 git show "HEAD:$LOCK" >"$BEFORE" 2>/dev/null || echo '{"entries":{}}' >"$BEFORE"
 
+# Wipe the SHA-keyed import cache so old folders don't accumulate alongside
+# new ones on every refresh. `gh aw compile` regenerates the cache (including
+# .gitattributes) from current import refs in the workflow .md files; the
+# resulting create-pull-request commit then contains the deletes and the
+# adds in one atomic diff.
+rm -rf .github/aw/imports
+
 gh aw compile --force-refresh-action-pins
 
 NOW=$(date -u +%s)

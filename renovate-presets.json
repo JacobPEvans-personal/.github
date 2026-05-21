@@ -27,7 +27,6 @@
     ".github/aw/**"
   ],
   "minimumReleaseAge": "3 days",
-  "timezone": "America/Chicago",
   "vulnerabilityAlerts": {
     "enabled": true,
     "labels": ["type:security"],

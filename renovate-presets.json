@@ -228,6 +228,11 @@
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "schedule": ["after 7am on Monday", "after 7am on Thursday"]
+    },
+    {
+      "description": "Bump Python `>=` lower bounds so they track the latest released version. Without this, Renovate's default `auto` strategy (= `replace` for pep621/pip_requirements) leaves `pyarrow>=17.0.0` untouched forever even when 24.x is current — the existing range already satisfies the new version, so `replace` no-ops. Setting `bump` forces the lower bound to move with each release, keeping security floors current. Mirrors the `rangeStrategy: bump` already used inside `vulnerabilityAlerts` so routine and CVE-driven bumps behave identically.",
+      "matchManagers": ["pep621", "pip_requirements", "pip_setup", "poetry", "pipenv"],
+      "rangeStrategy": "bump"
     }
   ]
 }

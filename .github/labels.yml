@@ -168,3 +168,11 @@
 - name: "renovate"
   color: "A5B4FC"
   description: "Renovate bot - Automated dependency management"
+
+- name: "cloud-routine"
+  color: "1D4ED8"
+  description: "PR/issue created by a Claude Code cloud routine (claude-code-routines)"
+
+- name: "agentic-workflows"
+  color: "10B981"
+  description: "PR/issue created by a reusable workflow from ai-workflows"

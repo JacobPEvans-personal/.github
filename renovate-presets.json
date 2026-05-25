@@ -66,26 +66,7 @@
       "enabled": false
     },
     {
-      "description": "30-day grace period for any major-version update, org-wide. Gives upstream ecosystems time to surface breaking-change regressions before we adopt them. CVE-driven bumps still bypass via the top-level vulnerabilityAlerts block (0 days). Trusted-org rules later in the file override per-attribute settings like automerge, but their minimumReleaseAge values yield to this rule for major updates — Renovate merges packageRule attributes by last-match wins per key, so this 30-day floor applies whenever a later rule does not set minimumReleaseAge itself.",
-      "matchUpdateTypes": ["major"],
-      "minimumReleaseAge": "30 days"
-    },
-    {
-      "description": "Never auto-merge major updates - require human review (overridden by trusted package rules below)",
-      "matchUpdateTypes": ["major"],
-      "automerge": false
-    },
-    {
-      "description": "Auto-merge all JacobPEvans-owned dependencies (immediate, all ecosystems)",
-      "matchPackageNames": [
-        "JacobPEvans/**",
-        "https://github.com/JacobPEvans/**"
-      ],
-      "automerge": true,
-      "minimumReleaseAge": "0 days"
-    },
-    {
-      "description": "Auto-merge trusted orgs — all managers, all update types (1-day stabilization)",
+      "description": "Auto-merge trusted orgs — all managers, all update types (1-day stabilization). Major updates from these orgs are later overridden by the major-default rule below (30-day grace, manual review). The `https://github.com/...` URL form of each entry was removed in this consolidation: `matchPackageNames` matches against the resolved `packageName`, which is `owner/repo` for both GitHub Actions and Nix flake `github:` inputs — the URL form never matched anything (verified via `gh search code 'depName=https://github.com/' org:JacobPEvans`, zero results).",
       "matchPackageNames": [
         "actions/**",
         "ansible/**",
@@ -138,62 +119,25 @@
         "softprops/**",
         "streetsidesoftware/**",
         "terraform-linters/**",
-        "wakatime/**",
-        "https://github.com/actions/**",
-        "https://github.com/ansible/**",
-        "https://github.com/anthropics/**",
-        "https://github.com/aquasecurity/**",
-        "https://github.com/astral-sh/**",
-        "https://github.com/aws-actions/**",
-        "https://github.com/aws-ia/**",
-        "https://github.com/Azure/**",
-        "https://github.com/bitwarden/**",
-        "https://github.com/cachix/**",
-        "https://github.com/codecov/**",
-        "https://github.com/criblio/**",
-        "https://github.com/DavidAnson/**",
-        "https://github.com/DeterminateSystems/**",
-        "https://github.com/docker/**",
-        "https://github.com/DopplerHQ/**",
-        "https://github.com/dorny/**",
-        "https://github.com/edolstra/**",
-        "https://github.com/github/**",
-        "https://github.com/google/**",
-        "https://github.com/google-github-actions/**",
-        "https://github.com/googleapis/**",
-        "https://github.com/hashicorp/**",
-        "https://github.com/hercules-ci/**",
-        "https://github.com/huggingface/**",
-        "https://github.com/kubernetes/**",
-        "https://github.com/kubernetes-sigs/**",
-        "https://github.com/lycheeverse/**",
-        "https://github.com/microsoft/**",
-        "https://github.com/nix-community/**",
-        "https://github.com/nix-darwin/**",
-        "https://github.com/nix-systems/**",
-        "https://github.com/NixOS/**",
-        "https://github.com/numtide/**",
-        "https://github.com/obra/**",
-        "https://github.com/open-telemetry/**",
-        "https://github.com/opentofu/**",
-        "https://github.com/ossf/**",
-        "https://github.com/oven-sh/**",
-        "https://github.com/oxalica/**",
-        "https://github.com/peter-evans/**",
-        "https://github.com/pre-commit/**",
-        "https://github.com/pypa/**",
-        "https://github.com/python/**",
-        "https://github.com/raycast/**",
-        "https://github.com/renovatebot/**",
-        "https://github.com/semgrep/**",
-        "https://github.com/sigstore/**",
-        "https://github.com/softprops/**",
-        "https://github.com/streetsidesoftware/**",
-        "https://github.com/terraform-linters/**",
-        "https://github.com/wakatime/**"
+        "wakatime/**"
       ],
       "automerge": true,
       "minimumReleaseAge": "1 day"
+    },
+    {
+      "description": "Major-version defaults, org-wide: 30-day grace period before a PR opens and never auto-merge (human review required). The grace gives upstream ecosystems time to surface breaking-change regressions before we adopt them. Placed AFTER the trusted-orgs rule so this rule's stricter values win per-attribute for trusted-org majors (Renovate merges packageRule attributes by last-match wins). CVE-driven bumps still bypass the grace via the top-level vulnerabilityAlerts block (0 days). The own-orgs rule below restores immediate auto-merge for JacobPEvans/** and dryvist/** majors specifically.",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "30 days",
+      "automerge": false
+    },
+    {
+      "description": "Auto-merge own-org dependencies (JacobPEvans + dryvist) — immediate, all ecosystems, all update types including major. Placed AFTER the major-default rule so we restore immediate auto-merge for our own majors that the major-default rule would otherwise hold for 30 days.",
+      "matchPackageNames": [
+        "JacobPEvans/**",
+        "dryvist/**"
+      ],
+      "automerge": true,
+      "minimumReleaseAge": "0 days"
     },
     {
       "description": "Auto-merge pre-commit hooks (minor and patch)",
@@ -228,8 +172,8 @@
       "schedule": ["after 7am on Monday", "after 7am on Thursday"]
     },
     {
-      "description": "Auto-merge Python packages (minor/patch) — pep621 and pip_requirements",
-      "matchManagers": ["pep621", "pip_requirements"],
+      "description": "Auto-merge Python minor/patch updates across every Python manager. Paired with the major-only `>=` bump rule below; the two share an identical manager list so behavior is symmetric: minor/patch auto-merge twice-weekly, major opens a PR (held by the 30-day major-default rule and reviewed manually). pip_setup/poetry/pipenv were added to match the bump rule's coverage — previously only pep621/pip_requirements auto-merged, an unintentional gap.",
+      "matchManagers": ["pep621", "pip_requirements", "pip_setup", "poetry", "pipenv"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "schedule": ["after 7am on Monday", "after 7am on Thursday"]

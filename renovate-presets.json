@@ -16,9 +16,8 @@
   ],
   "minimumReleaseAge": "3 days",
   "timezone": "America/Chicago",
-  "rangeStrategy": "update-lockfile",
   "pep723": {
-    "managerFilePatterns": ["/\\.py$/"]
+    "managerFilePatterns": ["\\.py$"]
   },
   "vulnerabilityAlerts": {
     "enabled": true,
@@ -48,8 +47,8 @@
       "customType": "regex",
       "fileMatch": ["\\.nix$"],
       "matchStrings": [
-        "\"(?<depName>@[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9._-]*)@(?<currentValue>\\d+(?:\\.\\d+)*(?:[._-]?(?:a|b|rc|alpha|beta|dev|post)\\d*)?(?:\\+[A-Za-z0-9.]+)?)\"",
-        "bunx\\s+--bun\\s+(?<depName>(?:@[^@/]+\\/)?[^@\\s]+)@(?<currentValue>\\d+(?:\\.\\d+)*(?:[._-]?(?:a|b|rc|alpha|beta|dev|post)\\d*)?(?:\\+[A-Za-z0-9.]+)?)"
+        "\"(?<depName>@[a-z0-9][a-z0-9-]*/[a-z0-9][a-z0-9._-]*)@(?<currentValue>\\d+(?:\\.\\d+)*(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[A-Za-z0-9.]+)?)\"",
+        "bunx\\s+--bun\\s+(?<depName>(?:@[^@/]+\\/)?[^@\\s]+)@(?<currentValue>\\d+(?:\\.\\d+)*(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[A-Za-z0-9.]+)?)"
       ],
       "datasourceTemplate": "npm"
     },
@@ -67,7 +66,7 @@
       "customType": "regex",
       "fileMatch": ["\\.github/workflows/.*\\.ya?ml$"],
       "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)[\\r\\n]+[\\s\\S]*?\\bnpx\\b\\s+(?:--yes\\s+|-y\\s+)?\\S+@(?<currentValue>\\d+(?:\\.\\d+)*(?:[._-]?(?:a|b|rc|alpha|beta|dev|post)\\d*)?(?:\\+[A-Za-z0-9.]+)?)"
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)[\\r\\n]+[\\s\\S]*?\\bnpx\\b\\s+(?:--yes\\s+|-y\\s+)?\\S+@(?<currentValue>\\d+(?:\\.\\d+)*(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[A-Za-z0-9.]+)?)"
       ]
     }
   ],

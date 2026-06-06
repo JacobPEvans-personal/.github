@@ -49,7 +49,12 @@ jobs:
       - name: Checkout central scripts
         uses: actions/checkout@v6
         with:
-          repository: ${{ github.repository_owner }}/.github
+          # This reusable workflow's scripts live in THIS repo, not the
+          # caller's. `github.repository_owner` resolves to the calling repo's
+          # owner (e.g. `dryvist`), whose `.github` has no `scripts/` dir, so
+          # the sparse-checkout produced an empty path and the audit step
+          # failed with exit 127 (script not found). Pin to the home org.
+          repository: JacobPEvans/.github
           path: .central-config
           sparse-checkout: scripts/run-pip-audit.sh
           sparse-checkout-cone-mode: false

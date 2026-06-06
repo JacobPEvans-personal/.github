@@ -31,9 +31,14 @@ jobs:
 
       - name: Apply org-default markdownlint config
         if: hashFiles('.markdownlint-cli2.jsonc', '.markdownlint-cli2.yaml', '.markdownlint-cli2.cjs', '.markdownlint-cli2.mjs', '.markdownlint.jsonc', '.markdownlint.json', '.markdownlint.yaml', '.markdownlint.yml', '.markdownlint.cjs', '.markdownlint.mjs') == ''
+        # The org-default config lives in THIS repo, not the caller's.
+        # `github.repository_owner` resolves to the calling repo's owner (e.g.
+        # `dryvist`), whose `.github/configs/.markdownlint-cli2.yaml` does not
+        # exist, so curl returned 404 and the step failed with exit 22. Pin to
+        # the home org's canonical config path.
         run: |
           curl -sSfL --retry 3 --retry-connrefused \
-            "https://raw.githubusercontent.com/${{ github.repository_owner }}/.github/main/configs/.markdownlint-cli2.yaml" \
+            "https://raw.githubusercontent.com/JacobPEvans/.github/main/configs/.markdownlint-cli2.yaml" \
             -o .markdownlint-cli2.yaml
 
       - name: Run markdownlint

@@ -1,0 +1,91 @@
+# Reusable: Splunk App Validation
+# Packages the caller's Splunk app and runs Splunk AppInspect against the
+# tarball; optionally runs the caller's Dashboard Studio structural validator.
+name: _splunk-app-validate
+
+on:
+  workflow_call:
+    inputs:
+      app-name:
+        description: "Splunk app id (tarball prefix produced by scripts/package.sh)"
+        required: true
+        type: string
+      check-dashboards:
+        description: "Also run scripts/validate_dashboards.py against default/data/ui/views"
+        required: false
+        type: boolean
+        default: false
+      runner_label:
+        description: >-
+          GitHub Actions runner label. Defaults to ubuntu-latest. Pass a
+          RunsOn label (see runs-on.com/configuration/job-labels) to opt
+          the calling repo into self-hosted runners.
+        type: string
+        required: false
+        default: ubuntu-latest
+
+concurrency:
+  group: splunk-app-validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  appinspect:
+    name: AppInspect
+    runs-on: ${{ inputs.runner_label }}
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          # splunk-appinspect lags the newest Python; 3.11 is its supported sweet spot
+          python-version: "3.11"
+
+      - name: Install Splunk AppInspect
+        run: pip install splunk-appinspect
+
+      - name: Package app
+        run: ./scripts/package.sh
+
+      - name: Run AppInspect (gate on failure + error)
+        env:
+          APP_NAME: ${{ inputs.app-name }}
+        run: |
+          splunk-appinspect inspect "build/${APP_NAME}-"*.tar.gz \
+            --data-format json --output-file appinspect.json || true
+          python - <<'EOF'
+          import json
+          import sys
+
+          with open("appinspect.json") as fh:
+              summary = json.load(fh)["summary"]
+          print(json.dumps(summary, indent=2))
+          sys.exit(1 if summary.get("failure", 0) + summary.get("error", 0) else 0)
+          EOF
+
+      - name: Upload AppInspect report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appinspect-report
+          path: appinspect.json
+
+  dashboards:
+    name: Dashboard validation
+    if: inputs.check-dashboards
+    runs-on: ${{ inputs.runner_label }}
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Validate Dashboard Studio definitions
+        run: python3 scripts/validate_dashboards.py default/data/ui/views/*.xml

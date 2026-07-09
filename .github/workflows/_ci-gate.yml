@@ -72,6 +72,18 @@ on:
         description: Space-separated dirs passed to _python-security.yml
         type: string
         default: ''
+      dependency_review:
+        description: >-
+          Enable `Dependency Review`. Runs on PUBLIC repos only —
+          actions/dependency-review-action needs GitHub Advanced Security to
+          read the dependency graph, which is off on private/internal repos,
+          so the job auto-skips there (tolerated via `allowed-skips`). On
+          repos where it runs, it fires on every `pull_request` event,
+          unconditionally — NOT gated on any `filters` output, since a
+          supply-chain scan must not be skippable by touching only untracked
+          paths.
+        type: boolean
+        default: true
 
       runner_label:
         description: >-
@@ -156,6 +168,26 @@ jobs:
       runner_label: ${{ inputs.runner_label }}
     secrets: inherit
 
+  # dependency-review is intentionally NOT `needs: changes` / filter-gated —
+  # a supply-chain scan must run on every pull_request regardless of which
+  # paths a diff touches. It IS gated to public repos: dependency-review-
+  # action needs GHAS to read the dependency graph, which is off on
+  # private/internal repos (403s there) — those skip, which the gate
+  # tolerates via allowed-skips.
+  dependency-review:
+    name: Dependency Review
+    if: ${{ inputs.dependency_review && github.event_name == 'pull_request' && github.event.repository.private == false }}
+    runs-on: ${{ inputs.runner_label }}
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure
+
   # ============================================================================
   # WATCHDOG
   # Forces a terminal state for queued sibling jobs after queue_timeout_minutes.
@@ -195,7 +227,7 @@ jobs:
   # ============================================================================
   gate:
     name: Merge Gate
-    needs: [changes, watchdog, nix-validate, markdown-lint, file-size, python-security]
+    needs: [changes, watchdog, nix-validate, markdown-lint, file-size, python-security, dependency-review]
     if: ${{ always() && !cancelled() }}
     runs-on: ${{ inputs.runner_label }}
     steps:
@@ -204,5 +236,5 @@ jobs:
         with:
           # `watchdog` is always-success-on-completion; treating it as
           # allowed-skip lets `alls-green` ignore its result either way.
-          allowed-skips: nix-validate, markdown-lint, file-size, python-security, watchdog
+          allowed-skips: nix-validate, markdown-lint, file-size, python-security, dependency-review, watchdog
           jobs: ${{ toJSON(needs) }}

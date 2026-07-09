@@ -9,17 +9,28 @@ on the affected repository. Do not open a public issue for security vulnerabilit
 For critical vulnerabilities affecting multiple repositories, report to the
 [.github repository](https://github.com/JacobPEvans/.github/security/advisories/new).
 
-## Dependency Trust Tiers
+## Dependency Trust
 
-All automated dependency updates follow a tiered trust model enforced by
-[Renovate](https://docs.renovatebot.com/) via `renovate-presets.json`:
+This repo's `renovate-presets.json` is a thin shim inheriting Renovate policy
+from [dryvist/.github](https://github.com/dryvist/.github) — the single
+source of truth across all dryvist and JacobPEvans repositories. For the
+trust-tier table, allowlist, and exact config, see dryvist/.github's
+[`renovate-presets.json`](https://github.com/dryvist/.github/blob/main/renovate-presets.json)
+and [`SECURITY.md`](https://github.com/dryvist/.github/blob/main/SECURITY.md),
+or [docs.jacobpevans.com/infrastructure/cicd/dependency-automation](https://docs.jacobpevans.com/infrastructure/cicd/dependency-automation).
 
-| Tier | Scope | Stabilization | Auto-merge | Rationale |
-| ------ | ------- | --------------- | ------------ | ----------- |
-| **Always Trusted** | `JacobPEvans/**` (self-owned repos) | 0 days | Yes, CI-gated | Full code review and commit signing control |
-| **Trusted, Wait** | GitHub Actions, Terraform, PyPI, pre-commit hooks | 3 days | Minor/patch auto; major manual | Established orgs; strong security posture |
-| **Trusted Nix** | `NixOS/*`, `nix-community/*`, `cachix/*`, `DeterminateSystems/*` | 3 days | Yes, CI-gated | Community-monitored, commit-pinned (immutable) |
-| **Default** | All other external dependencies | 3 days | No | Requires manual review before merge |
+In short: minor/patch updates auto-merge publisher-agnostically (any package,
+any ecosystem) after a 3-day stabilization window and green CI. Majors never
+auto-merge except first-party (`dryvist/**`, `JacobPEvans/**`,
+`JacobPEvans-personal/**`); a security-triggered major still opens for review
+like any other major.
+
+Supply-chain scanning via a deterministic `dependency-review` job in a
+required Merge Gate is the canonical posture upstream — not yet present in
+this repo's own local gate.
+
+GitHub Actions from untrusted orgs are pinned to SHA digests, not tags;
+first-party self-references ride `@main` (see Version Pinning below).
 
 ### Version Pinning Strategy
 
@@ -29,7 +40,7 @@ All automated dependency updates follow a tiered trust model enforced by
 | Trusted GitHub Actions | Semantic version tags (e.g., `@v6`) |
 | External/untrusted GitHub Actions | SHA commit hash pins |
 | Nix flake inputs | Branch-pinned to stable releases (e.g., `nixpkgs-25.11-darwin`) |
-| Python packages (pyproject.toml) | Lower-bound with `>=`, managed by Renovate with 3-day soak |
+| Python packages (pyproject.toml) | Lower-bound with `>=`; publisher-agnostic minor/patch auto-merge like every other ecosystem |
 | Python tool installs (uv) | Exact pin with `==`, managed by Renovate custom regex |
 
 ## Dependency Update Vectors

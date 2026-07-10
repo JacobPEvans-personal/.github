@@ -178,15 +178,19 @@ jobs:
     name: Dependency Review
     if: ${{ inputs.dependency_review && github.event_name == 'pull_request' && github.event.repository.private == false }}
     runs-on: ${{ inputs.runner_label }}
+    # contents:read ONLY — a called workflow's job may never request more than
+    # the caller granted, or the whole run dies at graph validation
+    # (startup_failure) before any job starts. `pull-requests: write` (for
+    # comment-summary-in-pr) exceeded the standard caller grant and broke
+    # every consumer's gate; failure detail lives in the check-run output
+    # instead of a PR comment.
     permissions:
       contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v6
       - uses: actions/dependency-review-action@v5
         with:
           fail-on-severity: moderate
-          comment-summary-in-pr: on-failure
 
   # ============================================================================
   # WATCHDOG

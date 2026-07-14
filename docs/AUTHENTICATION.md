@@ -18,10 +18,16 @@ Cross-repository reference for how credentials are managed across the JacobPEvan
 
 ### aws-vault
 
-- **Used by**: terraform-aws, terraform-proxmox, terraform-aws-bedrock
+- **Used by**: terraform-aws, terraform-aws-bedrock
 - **Purpose**: AWS credential management with MFA/session tokens
 - **Access**: Via `aws-vault exec <profile> --` prefix
-- **Detailed guide**: See terraform-proxmox `docs/aws-vault-terraform.md`
+
+### OpenBao (AWS secrets engine)
+
+- **Used by**: terraform-proxmox
+- **Purpose**: AWS credential management for automation and AI agents — a dynamic secrets engine brokers short-lived STS sessions,
+  replacing the retired static aws-vault base key for this repo
+- **Access**: Terrakube workspace JWT identity (CI/plan/apply); local/agent access via an AWS `credential_process` profile backed by an OpenBao AppRole
 
 ### SOPS/age
 

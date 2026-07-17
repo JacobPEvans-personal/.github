@@ -28,17 +28,25 @@ jobs:
   # Enumerate the public repos to fan out to (this .github repo excluded).
   # Owner is JacobPEvans-personal: the bare JacobPEvans login is now an empty
   # placeholder org, so the old `gh repo list JacobPEvans` returned zero repos.
+  # `environment: automation` is required: GH_PAT_WORKFLOW_DISPATCH is scoped to
+  # that environment, so without it the secret resolves empty and the matrix is
+  # built from an unauthenticated listing.
   list:
     runs-on: ubuntu-latest
+    environment: automation
     outputs:
       repos: ${{ steps.list.outputs.repos }}
     steps:
+      # `set -euo pipefail` + jq's own emptiness assertion fail at the source:
+      # an auth/rate-limit/network error must not silently become a no-op
+      # matrix (the swallowed-failure mode this PR exists to remove).
       - id: list
         env:
           GH_TOKEN: ${{ secrets.GH_PAT_WORKFLOW_DISPATCH }}
         run: |
+          set -euo pipefail
           repos=$(gh repo list JacobPEvans-personal --visibility public --limit 100 --json name \
-            --jq '[.[].name | select(. != ".github")]')
+            --jq 'map(.name | select(. != ".github")) | if length == 0 then error("empty repo listing — refusing to sync nothing") else . end')
           echo "repos=$repos" >> "$GITHUB_OUTPUT"
 
   # Fan out one isolated job per repo. Same trusted, pinned action as `self`,

@@ -6,45 +6,74 @@ on:
     paths: [.github/labels.yml]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  sync:
+  # The canonical repo is pruned to exactly labels.yml (delete-other-labels).
+  self:
     runs-on: ubuntu-latest
     environment: automation
-    # permissions for GITHUB_TOKEN (used by EndBug/label-sync on this repo only).
-    # Cross-repo operations use GH_PAT_WORKFLOW_DISPATCH PAT instead.
     permissions:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@v6
-
-      # Step 1: Sync labels.yml -> this repo's GitHub labels via EndBug/label-sync.
-      # This ensures .github repo matches the file before step 2 clones from it.
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Sync labels to this repo from labels.yml
-        uses: EndBug/label-sync@v2
+        uses: EndBug/label-sync@52074158190acb45f3077f9099fea818aa43f97a # v2
         with:
           config-file: .github/labels.yml
           delete-other-labels: true
 
-      # Step 2: Clone from .github (now guaranteed in sync with labels.yml) to
-      # all other public repos. Private repos are intentionally excluded.
-      - name: Sync labels to all other public repos
+  # Enumerate the public repos to fan out to (this .github repo excluded).
+  # Owner is JacobPEvans-personal: the bare JacobPEvans login is now an empty
+  # placeholder org, so the old `gh repo list JacobPEvans` returned zero repos.
+  # `environment: automation` is required: GH_PAT_WORKFLOW_DISPATCH is scoped to
+  # that environment, so without it the secret resolves empty and the matrix is
+  # built from an unauthenticated listing.
+  list:
+    runs-on: ubuntu-latest
+    environment: automation
+    outputs:
+      repos: ${{ steps.list.outputs.repos }}
+    steps:
+      # `set -euo pipefail` + an explicit empty-array guard fail at the source:
+      # an auth/rate-limit/network error must not silently become a no-op matrix
+      # (the swallowed-failure mode this PR exists to remove). A plain --jq
+      # filter plus a bash `test` avoids depending on gojq's error() (gh's --jq
+      # is gojq, not jq).
+      - id: list
         env:
           GH_TOKEN: ${{ secrets.GH_PAT_WORKFLOW_DISPATCH }}
         run: |
-          repos=$(gh repo list JacobPEvans --public --json name --limit 100 \
-            | jq -r '.[].name | select(. != ".github")') || {
-            echo "Error: Failed to fetch repository list"
-            exit 1
-          }
+          set -euo pipefail
+          repos=$(gh repo list JacobPEvans-personal --visibility public --limit 100 --json name \
+            --jq 'map(.name | select(. != ".github"))')
+          test "$repos" != "[]"
+          echo "repos=$repos" >> "$GITHUB_OUTPUT"
 
-          if [ -z "$repos" ]; then
-            echo "Warning: No repositories found to sync"
-            exit 0
-          fi
-
-          for repo in $repos; do
-            echo "Syncing labels to $repo..."
-            gh label clone JacobPEvans/.github -R "JacobPEvans/$repo" --force || \
-              echo "  Warning: failed to sync $repo"
-          done
+  # Fan out one isolated job per repo. Same trusted, pinned action as `self`,
+  # retargeted by overriding GITHUB_REPOSITORY (EndBug/label-sync reads its
+  # target from that env var) and authenticated with the cross-repo PAT.
+  # Replaces the previous `gh label clone` loop, which deadlocked
+  # (`all goroutines are asleep`) on every repo and swallowed the failure.
+  # Additive by design (delete-other-labels defaults to false) to match the
+  # old clone behavior; the canonical prune stays on `self`.
+  sync:
+    needs: list
+    runs-on: ubuntu-latest
+    environment: automation
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        repo: ${{ fromJSON(needs.list.outputs.repos) }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - name: Sync labels to ${{ matrix.repo }}
+        uses: EndBug/label-sync@52074158190acb45f3077f9099fea818aa43f97a # v2
+        env:
+          GITHUB_REPOSITORY: JacobPEvans-personal/${{ matrix.repo }}
+        with:
+          config-file: .github/labels.yml
+          token: ${{ secrets.GH_PAT_WORKFLOW_DISPATCH }}

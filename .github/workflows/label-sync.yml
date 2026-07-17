@@ -37,16 +37,19 @@ jobs:
     outputs:
       repos: ${{ steps.list.outputs.repos }}
     steps:
-      # `set -euo pipefail` + jq's own emptiness assertion fail at the source:
-      # an auth/rate-limit/network error must not silently become a no-op
-      # matrix (the swallowed-failure mode this PR exists to remove).
+      # `set -euo pipefail` + an explicit empty-array guard fail at the source:
+      # an auth/rate-limit/network error must not silently become a no-op matrix
+      # (the swallowed-failure mode this PR exists to remove). A plain --jq
+      # filter plus a bash `test` avoids depending on gojq's error() (gh's --jq
+      # is gojq, not jq).
       - id: list
         env:
           GH_TOKEN: ${{ secrets.GH_PAT_WORKFLOW_DISPATCH }}
         run: |
           set -euo pipefail
           repos=$(gh repo list JacobPEvans-personal --visibility public --limit 100 --json name \
-            --jq 'map(.name | select(. != ".github")) | if length == 0 then error("empty repo listing — refusing to sync nothing") else . end')
+            --jq 'map(.name | select(. != ".github"))')
+          test "$repos" != "[]"
           echo "repos=$repos" >> "$GITHUB_OUTPUT"
 
   # Fan out one isolated job per repo. Same trusted, pinned action as `self`,

@@ -148,15 +148,13 @@ Standardized [pull request templates][pr-templates-docs] that enforce convention
 | `auto-label-issues.yml`      | Apply priority/size from issue forms | Issue creation                   |
 | `codeql.yml`                 | Code scanning (GitHub Actions)       | Push/PR to main, weekly schedule |
 | `label-sync.yml`             | Deploy `labels.yml` to all repos     | Push to main, manual             |
-| `_copilot-setup-steps.yml`   | Reusable: Copilot setup steps        | `workflow_call`                  |
-| `_file-size.yml`             | Reusable: file size/line checks      | `workflow_call`                  |
-| `_markdown-lint.yml`         | Reusable: markdownlint-cli2          | `workflow_call`                  |
-| `_nix-build.yml`             | Reusable: Nix build (macOS)          | `workflow_call`                  |
-| `_nix-validate.yml`          | Reusable: Nix flake check (Linux)    | `workflow_call`                  |
 | `_release-please.yml`        | Reusable: versioning and changelog   | `workflow_call`                  |
 
 **Reusable workflows** (prefixed with `_`) are called by other repos via
-`uses: JacobPEvans/.github/.github/workflows/_name.yml@main`.
+`uses: JacobPEvans-personal/.github/.github/workflows/_name.yml@main`. Only
+`_release-please.yml` and `_splunk-app-validate.yml` remain here; every other
+shared workflow lives in `dryvist/.github`, which is also where the Renovate
+policy this repo's preset forwards to is mastered.
 
 **Auto-label**: When an issue is created from a template, the workflow extracts
 the user's dropdown selections (priority and size) and applies labels.

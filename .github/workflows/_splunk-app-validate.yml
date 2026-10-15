@@ -43,7 +43,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           # splunk-appinspect lags the newest Python; 3.11 is its supported sweet spot
-          python-version: "3.11"
+          python-version: "3.15"
 
       - name: Install Splunk AppInspect
         run: pip install splunk-appinspect
@@ -85,7 +85,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.13"
+          python-version: "3.15"
 
       - name: Validate Dashboard Studio definitions
         run: python3 scripts/validate_dashboards.py default/data/ui/views/*.xml

@@ -80,7 +80,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       # Org policy: automated major version bumps are forbidden.
       # This overrides any repo-level versioning config to ensure release-please
